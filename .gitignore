@@ -1,0 +1,6 @@
+# STM32CubeIDE
+
+.settings/
+Debug/
+
+*.launch
