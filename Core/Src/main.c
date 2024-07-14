@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdatomic.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +43,8 @@
 RTC_HandleTypeDef hrtc;
 
 /* USER CODE BEGIN PV */
-
+// Cleared when there is a button press to acknowledge. Set when it's been acknowledged.
+volatile atomic_flag button_flag = ATOMIC_FLAG_INIT;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,7 +76,7 @@ struct display_segs
 	struct full_digit_segs ones;
 };
 
-struct full_digit_segs encode_digit(unsigned digit, _Bool encode_zero_as_blank) {
+static struct full_digit_segs encode_digit(unsigned digit, _Bool encode_zero_as_blank) {
 	switch (digit)
 	{
 	case 0:
@@ -144,6 +145,11 @@ static void write_display_pins(struct display_segs display_segs, _Bool phase) {
 	HAL_GPIO_WritePin(SEG_3G_GPIO_Port, SEG_3G_Pin, display_segs.ones.g ^ phase);
 }
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	atomic_flag_clear(&button_flag);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -154,7 +160,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  atomic_flag_test_and_set(&button_flag);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -178,20 +184,32 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   _Bool phase = 0;
+  unsigned count = 0;
+  unsigned ticks = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  RTC_TimeTypeDef time;
-	  RTC_DateTypeDef date;
-	  HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-	  // We don't use the date, but the HAL docs say we need to call this.
-	  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-	  const unsigned long count = time.Seconds;
+	  if (ticks >= 32)
+	  {
+		  ticks = 0;
+		  count++;
+	  }
+
+	  if (count > 199) count = 0;
+
+	  const _Bool button_pressed_since_last_loop = !atomic_flag_test_and_set(&button_flag);
+	  if (button_pressed_since_last_loop)
+	  {
+		  ticks = 0;
+		  count = 0;
+	  }
 
 	  write_display_pins(encode_number(count), phase);
+
+	  ticks++;
 	  phase = !phase;
 
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
@@ -343,9 +361,13 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : BUTTON_Pin */
   GPIO_InitStruct.Pin = BUTTON_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(BUTTON_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

@@ -91,6 +91,7 @@ void Error_Handler(void);
 #define SEG_2C_GPIO_Port GPIOB
 #define BUTTON_Pin GPIO_PIN_7
 #define BUTTON_GPIO_Port GPIOB
+#define BUTTON_EXTI_IRQn EXTI4_15_IRQn
 
 /* USER CODE BEGIN Private defines */
 
