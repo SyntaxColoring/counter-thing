@@ -105,7 +105,7 @@ struct full_digit_segs encode_digit(unsigned digit, _Bool encode_zero_as_blank) 
 	}
 }
 
-struct display_segs encode_number(unsigned n) {
+static struct display_segs encode_number(unsigned n) {
 	const unsigned ones = n % 10;
 	const unsigned tens = n % 100 / 10;
 	const unsigned hundreds = n % 1000 / 100;
@@ -119,7 +119,7 @@ struct display_segs encode_number(unsigned n) {
 	};
 }
 
-void write_display_pins(struct display_segs display_segs, _Bool phase) {
+static void write_display_pins(struct display_segs display_segs, _Bool phase) {
 	HAL_GPIO_WritePin(COM_GPIO_Port, COM_Pin, phase);
 
 	// Hundreds digit:
