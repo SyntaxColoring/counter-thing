@@ -195,8 +195,7 @@ int main(void)
 	  phase = !phase;
 
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-	  // TODO: Investigate whether PWR_LOWPOWERREGULATOR_ON introduces acceptable latency.
-	  HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON, PWR_STOPENTRY_WFI);
+	  HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
 
     /* USER CODE END WHILE */
 
