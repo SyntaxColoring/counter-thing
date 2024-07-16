@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdatomic.h>
+#include <stdint.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,8 +45,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+const static unsigned TICKS_PER_SECOND = 32;
+const static unsigned TICKS_PER_PERIOD = TICKS_PER_SECOND * 60 * 60 * 24; // Days.
+//const static unsigned TICKS_PER_PERIOD = TICKS_PER_SECOND / 2; // Half-seconds, for testing.
+const static unsigned MAXIMUM_COUNT = 199;
+
 // Cleared when there is a button press to acknowledge. Set when it's been acknowledged.
-volatile atomic_flag button_flag = ATOMIC_FLAG_INIT;
+volatile static atomic_flag button_flag = ATOMIC_FLAG_INIT;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -183,32 +189,26 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   _Bool phase = 0;
-  unsigned count = 0;
-  unsigned ticks = 0;
+
+  // As a uint64_t, we could have 1 tick per nanosecond and this could still count hundreds of years.
+  uint64_t ticks_since_last_clear = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if (ticks >= 32)
-	  {
-		  ticks = 0;
-		  count++;
-	  }
-
-	  if (count > 199) count = 0;
-
 	  const _Bool button_pressed_since_last_loop = !atomic_flag_test_and_set(&button_flag);
 	  if (button_pressed_since_last_loop)
 	  {
-		  ticks = 0;
-		  count = 0;
+		  ticks_since_last_clear = 0;
 	  }
 
-	  write_display_pins(encode_number(count), phase);
+	  const unsigned current_count = ticks_since_last_clear / TICKS_PER_PERIOD % MAXIMUM_COUNT;
 
-	  ticks++;
+	  write_display_pins(encode_number(current_count), phase);
+
+	  ticks_since_last_clear++;
 	  phase = !phase;
 
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
