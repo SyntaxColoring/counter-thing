@@ -204,7 +204,7 @@ int main(void)
 		  ticks_since_last_clear = 0;
 	  }
 
-	  const unsigned current_count = ticks_since_last_clear / TICKS_PER_PERIOD % MAXIMUM_COUNT;
+	  const unsigned current_count = ticks_since_last_clear / TICKS_PER_PERIOD % (MAXIMUM_COUNT + 1);
 
 	  write_display_pins(encode_number(current_count), phase);
 
