@@ -151,6 +151,23 @@ static void write_display_pins(struct display_segs display_segs, _Bool phase) {
 	HAL_GPIO_WritePin(SEG_3G_GPIO_Port, SEG_3G_Pin, display_segs.ones.g ^ phase);
 }
 
+static uint64_t read_startup_count(void)
+{
+	const uint32_t word_0 = *(uint32_t*)DATA_EEPROM_BASE;
+	const uint32_t word_1 = *(uint32_t*)(DATA_EEPROM_BASE + sizeof(word_0));
+	return (uint64_t)word_1 << 32 | word_0;
+}
+
+static void write_startup_count(uint64_t data)
+{
+	const uint32_t word_0 = (uint32_t)data;
+	const uint32_t word_1 = (uint32_t)(data >> 32);
+	HAL_FLASHEx_DATAEEPROM_Unlock();
+	HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, DATA_EEPROM_BASE, word_0);
+	HAL_FLASHEx_DATAEEPROM_Program(FLASH_TYPEPROGRAMDATA_WORD, DATA_EEPROM_BASE + sizeof(word_0), word_1);
+	HAL_FLASHEx_DATAEEPROM_Lock();
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	atomic_flag_clear(&button_flag);
@@ -182,7 +199,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  uint64_t current_count = read_startup_count();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -191,8 +208,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   _Bool phase = 0;
 
-  // As a uint64_t, we could have 1 tick per nanosecond and this could still count hundreds of years.
-  uint64_t ticks_since_last_clear = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -202,14 +217,13 @@ int main(void)
 	  const _Bool button_pressed_since_last_loop = !atomic_flag_test_and_set(&button_flag);
 	  if (button_pressed_since_last_loop)
 	  {
-		  ticks_since_last_clear = 0;
+		  current_count++;
+		  current_count %= (MAXIMUM_COUNT + 1);
+		  write_startup_count(current_count);
 	  }
-
-	  const unsigned current_count = ticks_since_last_clear / TICKS_PER_PERIOD % (MAXIMUM_COUNT + 1);
 
 	  write_display_pins(encode_number(current_count), phase);
 
-	  ticks_since_last_clear++;
 	  phase = !phase;
 
 	  __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
