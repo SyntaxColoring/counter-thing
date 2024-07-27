@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdatomic.h>
 #include <stdint.h>
+
+#include "display.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,93 +65,6 @@ static void MX_RTC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-struct full_digit_segs
-{
-	_Bool a;
-	_Bool b;
-	_Bool c;
-	_Bool d;
-	_Bool e;
-	_Bool f;
-	_Bool g;
-};
-
-struct display_segs
-{
-	_Bool hundreds; // Our display can only show 1 or nothing for the hundreds digit.
-	struct full_digit_segs tens;
-	struct full_digit_segs ones;
-};
-
-static struct full_digit_segs encode_digit(unsigned digit, _Bool encode_zero_as_blank) {
-	switch (digit)
-	{
-	case 0:
-		return encode_zero_as_blank
-			? (struct full_digit_segs){}
-			: (struct full_digit_segs){.a=1,.b=1,.c=1,.d=1,.e=1,.f=1};
-	case 1:
-		return (struct full_digit_segs){.b=1,.c=1};
-	case 2:
-		return (struct full_digit_segs){.a=1,.b=1,.d=1,.e=1,.g=1};
-	case 3:
-		return (struct full_digit_segs){.a=1,.b=1,.c=1,.d=1,.g=1};
-	case 4:
-		return (struct full_digit_segs){.b=1,.c=1,.f=1,.g=1};
-	case 5:
-		return (struct full_digit_segs){.a=1,.c=1,.d=1,.f=1,.g=1};
-	case 6:
-		return (struct full_digit_segs){.a=1,.c=1,.d=1,.e=1,.f=1,.g=1};
-	case 7:
-		return (struct full_digit_segs){.a=1,.b=1,.c=1};
-	case 8:
-		return (struct full_digit_segs){.a=1,.b=1,.c=1,.d=1,.e=1,.f=1,.g=1};
-	case 9:
-		return (struct full_digit_segs){.a=1,.b=1,.c=1,.d=1,.f=1,.g=1};
-	default:
-		return (struct full_digit_segs){};
-	}
-}
-
-static struct display_segs encode_number(unsigned n) {
-	const unsigned ones = n % 10;
-	const unsigned tens = n % 100 / 10;
-	const unsigned hundreds = n % 1000 / 100;
-
-	const _Bool blank_tens_zero = !hundreds;
-
-	return (struct display_segs){
-		.ones=encode_digit(ones, 0),
-		.tens=encode_digit(tens, blank_tens_zero),
-		.hundreds=!!hundreds,
-	};
-}
-
-static void write_display_pins(struct display_segs display_segs, _Bool phase) {
-	HAL_GPIO_WritePin(COM_GPIO_Port, COM_Pin, phase);
-
-	// Hundreds digit:
-	HAL_GPIO_WritePin(SEG_1BC_GPIO_Port, SEG_1BC_Pin, display_segs.hundreds ^ phase);
-
-	// Tens digit:
-	HAL_GPIO_WritePin(SEG_2A_GPIO_Port, SEG_2A_Pin, display_segs.tens.a ^ phase);
-	HAL_GPIO_WritePin(SEG_2B_GPIO_Port, SEG_2B_Pin, display_segs.tens.b ^ phase);
-	HAL_GPIO_WritePin(SEG_2C_GPIO_Port, SEG_2C_Pin, display_segs.tens.c ^ phase);
-	HAL_GPIO_WritePin(SEG_2D_GPIO_Port, SEG_2D_Pin, display_segs.tens.d ^ phase);
-	HAL_GPIO_WritePin(SEG_2E_GPIO_Port, SEG_2E_Pin, display_segs.tens.e ^ phase);
-	HAL_GPIO_WritePin(SEG_2F_GPIO_Port, SEG_2F_Pin, display_segs.tens.f ^ phase);
-	HAL_GPIO_WritePin(SEG_2G_GPIO_Port, SEG_2G_Pin, display_segs.tens.g ^ phase);
-
-	// Ones digit:
-	HAL_GPIO_WritePin(SEG_3A_GPIO_Port, SEG_3A_Pin, display_segs.ones.a ^ phase);
-	HAL_GPIO_WritePin(SEG_3B_GPIO_Port, SEG_3B_Pin, display_segs.ones.b ^ phase);
-	HAL_GPIO_WritePin(SEG_3C_GPIO_Port, SEG_3C_Pin, display_segs.ones.c ^ phase);
-	HAL_GPIO_WritePin(SEG_3D_GPIO_Port, SEG_3D_Pin, display_segs.ones.d ^ phase);
-	HAL_GPIO_WritePin(SEG_3E_GPIO_Port, SEG_3E_Pin, display_segs.ones.e ^ phase);
-	HAL_GPIO_WritePin(SEG_3F_GPIO_Port, SEG_3F_Pin, display_segs.ones.f ^ phase);
-	HAL_GPIO_WritePin(SEG_3G_GPIO_Port, SEG_3G_Pin, display_segs.ones.g ^ phase);
-}
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
