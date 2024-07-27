@@ -71,16 +71,29 @@ static struct digit_segs get_fidget_frame(const uint64_t frame_number)
 	struct digit_segs result = {};
 
 	bool* const sequence[] = {
+		//&result.a, &result.b, &result.c, &result.d, &result.e, &result.f,
 		&result.a, &result.b, &result.g, &result.e, &result.d, &result.c, &result.g, &result.f
 	};
-	const unsigned num_active_segments = 3;
+	const unsigned sequence_length = sizeof(sequence) / sizeof(sequence[0]);
 
+	const unsigned num_active_segments = frame_number % 2 ? 3 : 2;
+	const unsigned start_index = frame_number / 2 % sequence_length;
 	for (unsigned active_segment_number = 0; active_segment_number < num_active_segments; active_segment_number++)
 	{
-		const unsigned index = (frame_number + active_segment_number) % (sizeof(sequence) / sizeof(sequence[0]));
+		const unsigned index = (start_index + active_segment_number) % sequence_length;
 		*(sequence[index]) = true;
 	}
 
+	return result;
+}
+
+static struct digit_segs mirror(const struct digit_segs original)
+{
+	struct digit_segs result = original;
+	result.b = original.f;
+	result.c = original.e;
+	result.e = original.c;
+	result.f = original.b;
 	return result;
 }
 
@@ -146,7 +159,7 @@ int main(void)
 
 	  struct display_segs s = {};
 	  s.ones = get_fidget_frame(current_count);
-	  s.tens = get_fidget_frame(current_count + 4);
+	  s.tens = mirror(get_fidget_frame(current_count));
 	  write_display_pins(s, phase);
 
 	  ticks_since_last_clear++;
