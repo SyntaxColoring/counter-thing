@@ -66,6 +66,24 @@ static void MX_RTC_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+static struct digit_segs get_fidget_frame(const uint64_t frame_number)
+{
+	struct digit_segs result = {};
+
+	bool* const sequence[] = {
+		&result.a, &result.b, &result.g, &result.e, &result.d, &result.c, &result.g, &result.f
+	};
+	const unsigned num_active_segments = 3;
+
+	for (unsigned active_segment_number = 0; active_segment_number < num_active_segments; active_segment_number++)
+	{
+		const unsigned index = (frame_number + active_segment_number) % (sizeof(sequence) / sizeof(sequence[0]));
+		*(sequence[index]) = true;
+	}
+
+	return result;
+}
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	atomic_flag_clear(&button_flag);
@@ -105,6 +123,8 @@ int main(void)
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
   _Bool phase = 0;
+  unsigned current_count = 0;
+  bool button_previously_pressed = false;
 
   // As a uint64_t, we could have 1 tick per nanosecond and this could still count hundreds of years.
   uint64_t ticks_since_last_clear = 0;
@@ -114,15 +134,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  const _Bool button_pressed_since_last_loop = !atomic_flag_test_and_set(&button_flag);
-	  if (button_pressed_since_last_loop)
+	  const bool button_pressed_now = !HAL_GPIO_ReadPin(BUTTON_GPIO_Port, BUTTON_Pin);
+	  const bool button_changed_since_last_loop = button_pressed_now != button_previously_pressed;
+	  button_previously_pressed = button_pressed_now;
+
+
+	  if (button_changed_since_last_loop)
 	  {
-		  ticks_since_last_clear = 0;
+		  current_count++;
 	  }
 
-	  const unsigned current_count = ticks_since_last_clear / TICKS_PER_PERIOD % (MAXIMUM_COUNT + 1);
-
-	  write_display_pins(encode_number(current_count), phase);
+	  struct display_segs s = {};
+	  s.ones = get_fidget_frame(current_count);
+	  s.tens = get_fidget_frame(current_count + 4);
+	  write_display_pins(s, phase);
 
 	  ticks_since_last_clear++;
 	  phase = !phase;
