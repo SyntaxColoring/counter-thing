@@ -1,4 +1,6 @@
-# KiCad backup and cache files:
+# KiCad:
 *.bak
 *-backups/
+*.lck
+_autosave-*
 fp-info-cache
