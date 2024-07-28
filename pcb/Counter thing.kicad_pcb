@@ -8,7 +8,7 @@
 	)
 	(paper "A4")
 	(title_block
-		(title "Mini Counter")
+		(title "Counter Thing")
 		(rev "A")
 		(company "Max Marrone")
 	)

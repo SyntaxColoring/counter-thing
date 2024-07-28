@@ -5,7 +5,7 @@
 	(uuid "3fda1d05-2ba2-4769-90bf-c1e73356da69")
 	(paper "A4")
 	(title_block
-		(title "Mini counter")
+		(title "Counter Thing")
 		(rev "A")
 		(company "Max Marrone")
 	)
