@@ -1,0 +1,4 @@
+# KiCad backup and cache files:
+*.bak
+*-backups/
+fp-info-cache

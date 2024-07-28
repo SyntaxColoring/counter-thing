@@ -1,0 +1,7 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "VI-201-DP-RC-S")(type "KiCad")(uri "${KIPRJMOD}/project_libraries/footprints/VI-201-DP-RC-S.pretty")(options "")(descr ""))
+  (lib (name "ECS-327KE")(type "KiCad")(uri "${KIPRJMOD}/project_libraries/footprints/ECS-327KE.pretty")(options "")(descr ""))
+  (lib (name "BU2032-1-G")(type "KiCad")(uri "${KIPRJMOD}/project_libraries/footprints/BU2032-1-G.pretty")(options "")(descr ""))
+  (lib (name "SAMTEC_FTSH-105-X-X-DV-007-P-X")(type "KiCad")(uri "${KIPRJMOD}/project_libraries/footprints/SAMTEC_FTSH-105-X-X-DV-007-P-X.pretty")(options "")(descr ""))
+)
